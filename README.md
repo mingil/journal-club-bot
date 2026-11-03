@@ -1,5 +1,9 @@
 # 🏥 의국 저널 클럽 봇 (Journal Club Bot - EBM Edition)
 
+[![Docker Image CI](https://github.com/mingil/journal-club-bot/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/mingil/journal-club-bot/actions/workflows/docker-publish.yml)
+[![Docker Hub](https://img.shields.io/docker/v/kimmingil/journal-club-bot?label=Docker%20Hub&logo=docker)](https://hub.docker.com/r/kimmingil/journal-club-bot)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+
 > **PubMed 최신 임상 논문(RCT) 자동 수집 · Google Gemini 시니어 교수 페르소나 비판적 분석 · Zotero 서지 관리 · Notion 아카이빙 · 의국 단체 이메일 브리핑까지 100% 자동화하는 올인원 Docker 봇**
 
 ---
@@ -47,26 +51,42 @@ flowchart LR
 
 시놀로지 NAS(Container Manager), 일반 리눅스 서버, Windows/Mac Docker Desktop 어디서든 **5분 안에 구동**할 수 있습니다.
 
-### 방법 A. Docker Hub / GHCR 이미지로 즉시 실행하기 (권장)
+### 방법 A. Docker Hub 공식 이미지로 즉시 실행하기 (가장 쉬움 · 권장)
 
-소스 코드를 직접 빌드할 필요 없이, 아래 3개의 파일(`compose.yaml`, `.env`, `config/settings.yaml`)만 준비하면 바로 실행됩니다.
+파이썬이나 소스 코드를 직접 다운로드/빌드할 필요 없이, **Docker Hub에 올라와 있는 공식 이미지(`kimmingil/journal-club-bot:latest`)**로 즉시 실행할 수 있습니다.
 
-1. 작업 폴더를 만들고 설정 파일들을 준비합니다:
+1. 작업 폴더를 만들고 이동합니다:
    ```bash
    mkdir -p journal-club-bot/config journal-club-bot/logs
    cd journal-club-bot
    ```
-2. `.env.example`을 참고하여 `.env` 파일을 생성하고 본인의 API 키를 입력합니다.
-3. `config/settings.yaml`에 원하는 타겟 저널 목록을 작성합니다.
-4. 컨테이너를 백그라운드로 실행합니다:
+2. 아래 내용으로 `compose.yaml` 파일을 만듭니다 (시놀로지 Container Manager의 '프로젝트 생성'에 그대로 붙여넣으셔도 됩니다):
+   ```yaml
+   services:
+     journal-club-bot:
+       image: kimmingil/journal-club-bot:latest
+       container_name: journal-club-bot
+       restart: unless-stopped
+       env_file:
+         - .env
+       environment:
+         - TZ=Asia/Seoul
+         - PYTHONUNBUFFERED=1
+       volumes:
+         - ./config:/app/config
+         - ./logs:/app/logs
+   ```
+3. [`.env.example`](https://raw.githubusercontent.com/mingil/journal-club-bot/main/.env.example)을 참고하여 `.env` 파일을 만들고 API 키를 입력합니다.
+4. [`config/settings.yaml`](https://raw.githubusercontent.com/mingil/journal-club-bot/main/config/settings.yaml)에 원하는 타겟 저널 목록을 넣습니다.
+5. 컨테이너를 실행합니다:
    ```bash
    docker compose up -d
    ```
 
-### 방법 B. GitHub 저장소 복제 후 직접 빌드하기
+### 방법 B. GitHub 저장소 복제 후 직접 빌드하기 (개발 및 코드 수정용)
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/journal-club-bot.git
+git clone https://github.com/mingil/journal-club-bot.git
 cd journal-club-bot
 cp .env.example .env
 # .env 파일에 API 키 입력 후 실행
