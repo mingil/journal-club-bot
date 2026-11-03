@@ -7,8 +7,8 @@ services:
       - .env
     environment:
       - TZ=Asia/Seoul
-      - PYTHONUNBUFFERED=1      # 파이썬 로그가 도커 터미널 화면에 즉시 출력되도록 함
+      - PYTHONUNBUFFERED=1      # Flush Python logs immediately to Docker stdout
     volumes:
-      - ./config:/app/config    # 타겟 저널 리스트는 언제든 수정 가능하도록 마운트
-      - ./logs:/app/logs        # 로그 파일은 서버 로컬에 영구 저장되도록 마운트
-      - ./src:/app/src      # 👈 [핵심 추가] 파이썬 코드를 빌드 없이 실시간 직통 연결!
+      - ./config:/app/config    # Mount target journal config & local Zotero cache
+      - ./logs:/app/logs        # Persist rotating system logs on the host
+      - ./src:/app/src          # Live-mount source code for instant updates without rebuilding

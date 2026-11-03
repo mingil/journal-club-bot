@@ -1,66 +1,84 @@
-# 🏥 의국 저널 클럽 봇 (Journal Club Bot - EBM Edition)
+# 🏥 Medical Journal Club Bot (EBM Edition)
+
+> 🌐 **Language**: **English** | [한국어 가이드 (Korean)](./README.ko.md)
 
 [![Docker Image CI](https://github.com/mingil/journal-club-bot/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/mingil/journal-club-bot/actions/workflows/docker-publish.yml)
 [![Docker Hub](https://img.shields.io/docker/v/kimmingil/journal-club-bot?label=Docker%20Hub&logo=docker)](https://hub.docker.com/r/kimmingil/journal-club-bot)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
-> **PubMed 최신 임상 논문(RCT) 자동 수집 · Google Gemini 시니어 교수 페르소나 비판적 분석 · Zotero 서지 관리 · Notion 아카이빙 · 의국 단체 이메일 브리핑까지 100% 자동화하는 올인원 Docker 봇**
+> **An all-in-one autonomous Docker bot for hospital departments and medical research labs: Automated PubMed RCT harvesting, Google Gemini Senior Professor EBM critical appraisal, Zotero bibliography management, Notion dashboard archiving, and responsive HTML email newsletters.**
 
 ---
 
-## ✨ 왜 이 봇이 필요한가요?
+## ✨ Why Journal Club Bot?
 
-매주 돌아오는 의국 저널 클럽(Journal Club) 발표를 위해 수많은 저널을 일일이 검색하고, 임상과 무관한 기초/타 직군 논문을 걸러내며, 서지 프로그램(Zotero)과 노션(Notion)에 정리하는 반복 작업을 완전히 자동화합니다.
+Preparing for weekly medical department Journal Clubs often involves repetitive manual searches across dozens of journals, filtering out non-clinical or non-physician noise, importing references into Zotero, and summarizing abstracts into Notion. **Journal Club Bot automates this entire workflow 24/7.**
 
-### 🌟 6대 핵심 기능
-1. **🎯 정밀한 임상의(MD) 주도 RCT 논문 필터링 (`fetcher_md.py`)**
-   - 지정된 핵심 타겟 저널에서 최신 무작위 대조군 연구(RCT)만 1차 추출합니다.
-   - 제1저자 또는 교신저자의 소속(Affiliation)과 학위(MD/DO/MBBS)를 정규식 3단계 필터(전공 키워드 + 의료기관 화이트리스트 + 기초/타 직군 네거티브 필터)로 정밀 검증하여 실제 진료 현장의 의사 주도 논문만 골라냅니다.
-2. **🤖 Google Gemini 시니어 교수의 날카로운 EBM 비판적 분석 (`analyzer.py`)**
-   - 단순 번역이나 요약이 아닙니다. 근거중심의학(EBM)에 정통한 **의과대학 시니어 교수 페르소나**가 논문의 한 줄 평, 저자 전문성 팩트 체크, **PICO 분석**, **연구 디자인의 치명적 한계(N수, 맹검, 편향)**, **실제 외래/치료실 적용 가능성(MCID, 수가/장비 제약)**을 냉철하게 브리핑합니다.
-3. **⚡ Zotero 로컬 캐싱(0.01초) & 순정 메타데이터 업로드 (`zotero_manager.py`)**
-   - 의국 공유 Zotero의 `후보(Candidates)` 및 `발표 완료(Presented)` 두 폴더를 대조하여 **한 번 처리된 논문(PMID/DOI)은 영구적으로 중복 수집을 차단**합니다.
-   - 로컬 JSON 캐시(`config/zotero_cache.json`)를 통해 평소에는 API 호출 없이 0.01초 만에 중복을 판별하며, 주간/월간 백업 스캔 시 Zotero 서버와 자동 동기화합니다.
-4. **📝 Notion 대시보드 자동 디자인 아카이빙 (`notion_manager.py`)**
-   - 한/영 노션 데이터베이스 제목 컬럼(`이름`, `Name`, `Title`)을 자동으로 인식(Zero-Config)합니다.
-   - 메타데이터 콜아웃 박스, PubMed 북마크, 영문 초록 접기(Toggle) 블록, 영역별 컬러 콜아웃 박스로 시각화된 브리핑 카드를 자동 생성합니다.
-5. **📧 모바일/PC 반응형 HTML 단체 이메일 리포트 (`notifier.py`)**
-   - 클릭 가능한 상단 목차(TOC), MD 확실성 뱃지, 컬러풀한 브리핑 박스, PubMed 원문 바로가기 버튼이 포함된 깔끔한 HTML 뉴스레터를 의국원 전체에게 발송합니다.
-6. **🛡️ 3중 안전망 스케줄러 & 무중단 에러 격리 (`main.py`)**
-   - **매일(07:00, 최근 7일) · 매주 일요일(07:10, 최근 30일) · 매월 첫째 주 월요일(07:20, 최근 90일)** 3중 겹침 스캔으로 PubMed 인덱싱 지연으로 인한 누락을 0%로 방어합니다.
+### 🌟 6 Key Features
+
+1. **🎯 Strict Physician (MD) & RCT Precision Filtering (`fetcher_md.py`)**
+   - Automatically queries PubMed (`NCBI Entrez`) across your curated list of target journals specifically for **Randomized Controlled Trials (RCTs)**.
+   - Applies a 3-stage regex verification pipeline on the first and last (corresponding) authors' affiliations and credentials (`MD`, `DO`, `MBBS`):
+     - *Stage 1*: Specialty keyword matching (default: Physical Medicine & Rehabilitation / PM&R, fully customizable for any specialty).
+     - *Stage 2*: Clinical & medical institution whitelist (`Hospital`, `School of Medicine`, `Medical Center`, etc.).
+     - *Stage 3*: Negative filtering to exclude non-physician basic science or allied health-only papers unless explicitly led by an MD.
+2. **🤖 Senior Professor EBM Critical Appraisal via Google Gemini (`analyzer.py`)**
+   - Powered by **Google Gemini (`gemini-3.6-flash` by default)** with a specialized Evidence-Based Medicine (EBM) Senior Medical Professor persona.
+   - Generates a structured, critical briefing:
+     - **🎯 One-Line Takeaway**: Core clinical value at a glance.
+     - **🧑‍⚕️ Author Credibility Check**: Verifies whether the study was genuinely led by practicing physicians in a clinical setting.
+     - **📊 PICO Fact Check**: Patient, Intervention, Comparison, and Outcomes (including primary endpoints & p-values).
+     - **🧐 Critical Appraisal**: Strengths and fatal methodological flaws (sample size, blinding failures, selection bias, short follow-up).
+     - **🏥 Real-World Clinical Implication**: Evaluates Minimal Clinically Important Difference (MCID), equipment/cost constraints, and immediate applicability in outpatient clinics.
+3. **⚡ Sub-Millisecond Zotero Deduplication & Clean Metadata Sync (`zotero_manager.py`)**
+   - Acts as the **Single Source of Truth** against duplicate papers by tracking both `Candidates` and `Presented` Zotero collections via `PMID` and normalized `DOI`.
+   - Uses a persistent local cache (`config/zotero_cache.json`) for **0.01-second deduplication** on daily runs, while automatically re-synchronizing with the remote Zotero server during weekly and monthly backup scans.
+   - Uploads clean, standard bibliographic metadata directly to your Zotero `Candidates` collection.
+4. **📝 Zero-Config Notion Dashboard Archiving (`notion_manager.py`)**
+   - Automatically detects your Notion database's title property (`Name`, `Title`, `이름`) with zero manual schema configuration.
+   - Builds rich Notion pages featuring metadata callouts, PubMed web bookmarks, collapsible toggle blocks for the original English abstract, and color-coded callout boxes for the AI appraisal.
+   - Safely handles Notion API limits via 2,000-character rich-text chunking and 100-block batch appending.
+5. **📧 Responsive HTML Department Email Digests (`notifier.py`)**
+   - Sends a modern, mobile-friendly HTML newsletter to multiple recipients (`EMAIL_TO`).
+   - Includes a clickable Table of Contents (TOC), MD certainty badges, styled EBM review cards, HTML-escaped statistical notation (`p < 0.05` safe rendering), and direct PubMed links.
+   - Compatible with Gmail (`SMTP_SSL` port 465) as well as institutional/custom SMTP servers (`STARTTLS` port 587).
+6. **🛡️ Triple-Safety Scheduler & Fault Isolation (`main.py`)**
+   - **Daily Sync (07:00)**: Scans the past 7 days to catch newly indexed papers.
+   - **Weekly Backup (Sunday 07:10)**: Scans the past 30 days + syncs remote Zotero cache.
+   - **Monthly Deep Scan (First Monday 07:20)**: Scans the past 90 days to guarantee zero missed publications due to PubMed indexing delays.
 
 ---
 
-## 🏗️ 전체 작동 파이프라인
+## 🏗️ Architecture & Pipeline
 
 ```mermaid
 flowchart LR
-    A["⏰ 스케줄러 가동\n(Daily / Weekly / Monthly)"] --> B["⚡ Zotero 중복 방어벽\n(로컬 캐시 & 서버 동기화)"]
-    B --> C["🔬 PubMed API 검색\n(타겟 저널 + RCT + MD 필터)"]
-    C --> D{"신규 논문\n존재 여부"}
-    D -- "없음" --> E["💤 대기 모드 복귀"]
-    D -- "발견" --> F["🤖 Gemini AI 분석\n(시니어 교수 EBM 브리핑)"]
-    F --> G["💾 Zotero 순정 업로드\n& 로컬 캐시 갱신"]
-    F --> H["📝 Notion 대시보드\n카드 자동 생성"]
-    G & H --> I["📧 의국 단체 HTML\n이메일 리포트 발송"]
+    A["⏰ Scheduler\n(Daily / Weekly / Monthly)"] --> B["⚡ Zotero Deduplication\n(Local Cache & Cloud Sync)"]
+    B --> C["🔬 PubMed API Fetcher\n(Target Journals + RCT + MD Filter)"]
+    C --> D{"New Papers\nFound?"}
+    D -- "No" --> E["💤 Return to Idle"]
+    D -- "Yes" --> F["🤖 Gemini AI Appraisal\n(Senior Professor EBM Review)"]
+    F --> G["💾 Zotero Clean Upload\n& Cache Update"]
+    F --> H["📝 Notion Dashboard\nCard Generation"]
+    G & H --> I["📧 Responsive HTML\nEmail Digest"]
 ```
 
 ---
 
-## 🚀 빠른 시작 가이드 (Quick Start)
+## 🚀 Quick Start (5 Minutes)
 
-시놀로지 NAS(Container Manager), 일반 리눅스 서버, Windows/Mac Docker Desktop 어디서든 **5분 안에 구동**할 수 있습니다.
+Multi-architecture Docker images (`linux/amd64` and `linux/arm64`) are officially published on **Docker Hub** and **GitHub Container Registry (GHCR)**. You can run this bot on a **Synology NAS (Container Manager)**, Linux server, Raspberry Pi, or Windows/Mac Docker Desktop.
 
-### 방법 A. Docker Hub 공식 이미지로 즉시 실행하기 (가장 쉬움 · 권장)
+### Option A. Run Instantly via Docker Hub Image (Recommended)
 
-파이썬이나 소스 코드를 직접 다운로드/빌드할 필요 없이, **Docker Hub에 올라와 있는 공식 이미지(`kimmingil/journal-club-bot:latest`)**로 즉시 실행할 수 있습니다.
+No need to clone the code or build anything locally. Only 3 files (`compose.yaml`, `.env`, and `config/settings.yaml`) are required:
 
-1. 작업 폴더를 만들고 이동합니다:
+1. Create a project directory:
    ```bash
    mkdir -p journal-club-bot/config journal-club-bot/logs
    cd journal-club-bot
    ```
-2. 아래 내용으로 `compose.yaml` 파일을 만듭니다 (시놀로지 Container Manager의 '프로젝트 생성'에 그대로 붙여넣으셔도 됩니다):
+2. Create `compose.yaml`:
    ```yaml
    services:
      journal-club-bot:
@@ -76,116 +94,126 @@ flowchart LR
          - ./config:/app/config
          - ./logs:/app/logs
    ```
-3. [`.env.example`](https://raw.githubusercontent.com/mingil/journal-club-bot/main/.env.example)을 참고하여 `.env` 파일을 만들고 API 키를 입력합니다.
-4. [`config/settings.yaml`](https://raw.githubusercontent.com/mingil/journal-club-bot/main/config/settings.yaml)에 원하는 타겟 저널 목록을 넣습니다.
-5. 컨테이너를 실행합니다:
+3. Download the sample configuration files:
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/mingil/journal-club-bot/main/.env.example -o .env
+   curl -fsSL https://raw.githubusercontent.com/mingil/journal-club-bot/main/config/settings.yaml -o config/settings.yaml
+   ```
+4. Fill in your API keys in `.env` and start the container:
    ```bash
    docker compose up -d
    ```
 
-### 방법 B. GitHub 저장소 복제 후 직접 빌드하기 (개발 및 코드 수정용)
+### Option B. Clone & Build from Source (For Developers)
 
 ```bash
 git clone https://github.com/mingil/journal-club-bot.git
 cd journal-club-bot
 cp .env.example .env
-# .env 파일에 API 키 입력 후 실행
+# Edit .env with your API keys
 docker compose up -d --build
 ```
 
 ---
 
-## 🔑 환경 변수(`.env`) 설정 가이드
+## 🔑 Environment Variables (`.env`)
 
-`.env.example` 파일을 복사해 `.env` 파일을 만들고 아래 항목을 채워주세요.
+Copy `.env.example` to `.env` and configure the following variables:
 
-| 변수명 | 필수 여부 | 설명 및 발급 방법 |
+| Variable | Required | Description & How to Obtain |
 | :--- | :---: | :--- |
-| `EMAIL` | 필수 | 발송자 이메일 주소 (예: `your_id@gmail.com`) 및 PubMed API 식별용 이메일 |
-| `EMAIL_PASSWORD` | 필수 | Gmail **16자리 앱 비밀번호** (구글 계정 관리 → 보안 → 2단계 인증 → 앱 비밀번호에서 발급) |
-| `EMAIL_TO` | 선택 | 리포트를 받을 수신자 목록. 여러 명일 경우 콤마(`,`)로 구분 (미입력 시 `EMAIL` 본인에게 발송) |
-| `GEMINI_API_KEY` | 필수 | [Google AI Studio](https://aistudio.google.com/)에서 발급받은 Gemini API 키 |
-| `GEMINI_MODEL` | 선택 | 사용할 AI 모델명 (기본값: `gemini-3.6-flash`) |
-| `ZOTERO_USER_ID` | 필수 | [Zotero Settings > Keys](https://www.zotero.org/settings/keys)에 표시되는 숫자 User ID |
-| `ZOTERO_API_KEY` | 필수 | Zotero에서 생성한 Private Key (읽기/쓰기 권한 체크) |
-| `ZOTERO_CANDIDATES_ID` | 필수 | 신규 후보 논문이 업로드될 Zotero 컬렉션(폴더)의 8자리 고유 키 (웹 Zotero에서 폴더 클릭 시 URL 끝 8자리) |
-| `ZOTERO_PRESENTED_ID` | 필수 | 이미 발표 완료된 논문이 모여 있는 Zotero 컬렉션(폴더)의 8자리 고유 키 |
-| `NOTION_API_KEY` | 필수 | [Notion 내 통합(Integrations)](https://www.notion.so/my-integrations)에서 발급받은 `ntn_...` 토큰 |
-| `NOTION_DATABASE_ID` | 필수 | 논문이 저장될 노션 데이터베이스의 32자리 ID (해당 노션 페이지 우측 상단 `...` → `연결 추가`에서 봇 연결 필수!) |
-| `NCBI_API_KEY` | 권장 | [NCBI 계정 설정](https://www.ncbi.nlm.nih.gov/account/settings/)에서 발급 (초당 요청 한도를 3회 → 10회로 상향) |
+| `EMAIL` | **Yes** | Sender email address (also used to identify requests to NCBI Entrez API) |
+| `EMAIL_PASSWORD` | **Yes** | SMTP password or **16-digit Gmail App Password** (*Google Account → Security → 2-Step Verification → App passwords*) |
+| `EMAIL_TO` | No | Comma-separated list of recipient emails (defaults to `EMAIL` if omitted) |
+| `SMTP_SERVER` | No | SMTP server hostname (default: `smtp.gmail.com`) |
+| `SMTP_PORT` | No | SMTP port (`465` for SSL, `587` for STARTTLS; default: `465`) |
+| `GEMINI_API_KEY` | **Yes** | API key from [Google AI Studio](https://aistudio.google.com/) |
+| `GEMINI_MODEL` | No | Gemini model name (default: `gemini-3.6-flash`) |
+| `ZOTERO_USER_ID` | **Yes** | Numeric User ID from [Zotero Settings > Keys](https://www.zotero.org/settings/keys) |
+| `ZOTERO_API_KEY` | **Yes** | Zotero API key with library read/write permissions |
+| `ZOTERO_LIBRARY_TYPE` | No | `user` (personal library) or `group` (group library); default: `user` |
+| `ZOTERO_CANDIDATES_ID` | **Yes** | 8-character collection key where new candidate papers will be uploaded |
+| `ZOTERO_PRESENTED_ID` | **Yes** | 8-character collection key where already presented papers are archived |
+| `NOTION_API_KEY` | **Yes** | Notion internal integration token (`ntn_...`) from [Notion Integrations](https://www.notion.so/my-integrations) |
+| `NOTION_DATABASE_ID` | **Yes** | 32-character Notion Database ID (*Make sure to connect your integration via the page's `...` → `Connections` menu!*) |
+| `NCBI_API_KEY` | Recommended | API key from [NCBI Account Settings](https://www.ncbi.nlm.nih.gov/account/settings/) (increases PubMed rate limit from 3 req/s to 10 req/s) |
+| `SCHEDULE_DAILY_TIME` | No | Daily scan time in `HH:MM` format (default: `07:00`) |
 
 ---
 
-## 🩺 다른 진료과 / 연구실 맞춤형 커스터마이징 (`config/settings.yaml`)
+## 🩺 Customizing for Other Medical Specialties (`config/settings.yaml`)
 
-기본값은 **재활의학과(PM&R)** 주요 19개 저널 및 재활의학과 전문의 필터로 세팅되어 있습니다.  
-**정형외과, 신경과, 내과, 마취통증의학과 등 다른 진료과**에서 사용하시려면 `config/settings.yaml`만 수정하시면 됩니다!
+Out of the box, the bot is pre-configured with **19 premier journals in Physical Medicine & Rehabilitation (PM&R)**.  
+To adapt the bot for **Neurology, Orthopedic Surgery, Internal Medicine, Cardiology, Pain Medicine, or any other specialty**, simply edit `config/settings.yaml`—no code changes required:
 
 ```yaml
 target_journals:
   - "New England Journal of Medicine"
   - "Lancet"
-  # 원하는 PubMed 등재 저널명을 자유롭게 추가/주석(#) 처리하세요.
+  - "Stroke"
+  # Add or comment out (#) any PubMed-indexed journal titles.
 
-# 타 진료과 적용 시 아래 주석을 해제하고 키워드와 페르소나를 변경하세요.
+# Optional: Override specialty filter keywords and AI professor persona
 filter_options:
-  strict_md_filter: true   # false로 설정하면 저자 소속 필터 없이 모든 RCT 논문을 수집합니다.
+  strict_md_filter: true   # Set to false to collect all RCTs regardless of author affiliation
   specialty_keywords:
     - "neurology"
     - "neurological"
     - "stroke"
 
 custom_persona: >
-  당신은 Evidence-Based Medicine(EBM)에 정통한 대한민국 최고 수준의 신경과 시니어 전문의이자 의과대학 교수입니다.
-  후배 전공의들의 저널 클럽 발표를 위해 최신 논문을 매우 비판적이고 날카로운 시각으로 분석하세요.
+  You are a senior Professor of Neurology specializing in Evidence-Based Medicine (EBM).
+  Critically appraise the following clinical trial for our department's resident journal club,
+  focusing on methodological limitations, statistical validity, and real-world clinical applicability.
 ```
 
 ---
 
-## 🛠️ 수동 실행 및 관리 명령어 (`run_manual.py`)
+## 🛠️ Manual CLI Execution & Testing (`run_manual.py`)
 
-정규 스케줄(매일 아침 7시)을 기다리지 않고 지금 즉시 테스트하거나 과거 논문을 대량으로 수집하고 싶을 때 사용합니다.
+You can trigger immediate scans, preview AI output without uploading (`--dry-run`), or perform historical mass sweeps directly inside the running container:
 
 ```bash
-# 1. [Dry-Run 테스트] Zotero/Notion 업로드와 메일 발송 없이 터미널에서 AI 분석 결과만 미리보기
+# 1. [Dry-Run Mode] Preview AI appraisal in terminal (skips Zotero/Notion upload & email)
 docker exec -it journal-club-bot python src/run_manual.py --days 7 --dry-run
 
-# 2. [즉시 수동 실행] 최근 14일 치 신규 논문을 찾아 즉시 Zotero/Notion 업로드 및 이메일 발송
+# 2. [Immediate Live Run] Scan the last 14 days, upload to Zotero/Notion, and send email report
 docker exec -it journal-club-bot python src/run_manual.py --days 14
 
-# 3. [대규모 과거 논문 싹쓸이] 최근 365일 치 논문을 Zotero/Notion에 아카이빙하되 이메일 폭탄만 방지(--no-email)
+# 3. [Historical Mass Sweep] Archive the last 365 days to Zotero/Notion without sending bulk emails (--no-email)
 docker exec -it journal-club-bot python src/run_manual.py --days 365 --no-email
 
-# 4. [Zotero 캐시 강제 동기화] Zotero 웹/앱에서 직접 추가한 논문 목록을 로컬 캐시와 즉시 동기화(--sync)
+# 4. [Force Zotero Sync] Force synchronize local cache with remote Zotero collections (--sync)
 docker exec -it journal-club-bot python src/run_manual.py --days 7 --sync
 ```
 
 ---
 
-## 📂 폴더 구조
+## 📂 Project Structure
 
 ```text
 journal-club-bot/
-├── compose.yaml              # Docker Compose 실행 설정 파일
-├── Dockerfile                # 컨테이너 빌드 정의서 (KST 타임존 & Healthcheck 내장)
-├── requirements.txt          # Python 필수 패키지 목록
-├── .env.example              # 환경변수 템플릿 파일
+├── compose.yaml              # Docker Compose configuration
+├── Dockerfile                # Multi-arch image definition (with TZ & Healthcheck)
+├── requirements.txt          # Python dependencies
+├── .env.example              # Environment variable template
 ├── config/
-│   ├── settings.yaml         # 타겟 저널 리스트 및 진료과 필터/페르소나 설정
-│   └── zotero_cache.json     # (자동 생성) Zotero 영구 중복 방지 로컬 캐시
+│   ├── settings.yaml         # Target journal list & specialty customization
+│   └── zotero_cache.json     # (Auto-generated) Persistent local Zotero ID cache
 ├── logs/
-│   └── system.log            # (자동 생성) 5MB 순환 시스템 로그
+│   └── system.log            # (Auto-generated) 5MB rotating system log
 └── src/
-    ├── main.py               # 24/365 스케줄러 및 파이프라인 오케스트레이터
-    ├── run_manual.py         # CLI 수동 실행 및 Dry-Run 테스트 도구
-    ├── fetcher_md.py         # PubMed API 배치 수집 및 3단계 MD/RCT 정규식 필터
-    ├── analyzer.py           # Google Gemini AI 시니어 교수 비판적 논문 분석기
-    ├── zotero_manager.py     # Zotero API 연동 및 로컬 캐시 매니저
-    ├── notion_manager.py     # Notion API 블록 디자인 조립 및 분할 업로더
-    └── notifier.py           # 반응형 HTML 이메일 리포트 생성 및 SMTP 발송기
+    ├── main.py               # 24/365 scheduler & pipeline orchestrator
+    ├── run_manual.py         # CLI manual runner & dry-run testing utility
+    ├── fetcher_md.py         # PubMed batch fetcher & 3-stage MD/RCT regex filter
+    ├── analyzer.py           # Google Gemini AI EBM critical appraisal engine
+    ├── zotero_manager.py     # Zotero API client & local cache manager
+    ├── notion_manager.py     # Notion API block builder & batch uploader
+    └── notifier.py           # Responsive HTML email generator & SMTP sender
 ```
 
 ---
 
-## 📜 라이선스 (License)
-이 프로젝트는 [MIT License](./LICENSE)에 따라 자유롭게 사용, 수정 및 배포할 수 있습니다.
+## 📜 License
+
+This project is licensed under the [MIT License](./LICENSE).
