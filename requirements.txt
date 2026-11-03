@@ -1,0 +1,8 @@
+schedule
+pyyaml
+requests
+python-dotenv
+biopython
+google-genai
+pyzotero
+notion-client

@@ -1,0 +1,13 @@
+.git
+.github
+.gitignore
+.env
+__pycache__/
+*.py[cod]
+*$py.class
+logs/
+venv/
+.venv/
+config/zotero_cache.json
+*.md
+LICENSE
