@@ -203,3 +203,68 @@ class EmailNotifier:
         except Exception as e:
             logger.error(f"❌ 이메일 발송 중 알 수 없는 오류 발생: {e}")
             return False
+
+class TelegramNotifier:
+    """신규 논문 요약·치명적 오류를 텔레그램으로 알림 (선택 기능).
+    TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID 가 모두 있을 때만 동작하고, 없으면 조용히 건너뛴다."""
+
+    API = "https://api.telegram.org/bot{token}/sendMessage"
+    LIMIT = 3900  # 텔레그램 메시지 최대 4096자 — 여유를 두고 나눔
+
+    def __init__(self):
+        self.token = (os.environ.get("TELEGRAM_BOT_TOKEN") or "").strip().strip('"').strip("'")
+        self.chat_id = (os.environ.get("TELEGRAM_CHAT_ID") or "").strip().strip('"').strip("'")
+        self.enabled = bool(self.token and self.chat_id)
+
+    def _send(self, text):
+        if not self.enabled:
+            return False
+        import requests
+        try:
+            r = requests.post(self.API.format(token=self.token),
+                              data={"chat_id": self.chat_id, "text": text, "parse_mode": "HTML",
+                                    "disable_web_page_preview": "true"}, timeout=20)
+            if r.status_code != 200:
+                logger.error(f"❌ 텔레그램 발송 실패: HTTP {r.status_code}")
+                return False
+            return True
+        except Exception as e:
+            logger.error(f"❌ 텔레그램 발송 오류: {type(e).__name__}")
+            return False
+
+    @staticmethod
+    def _one_liner(analysis):
+        for line in (analysis or "").splitlines():
+            if line.strip().startswith("🎯"):
+                return re.sub(r"\*\*", "", line.strip())[:300]
+        return ""
+
+    def send_report(self, results):
+        if not self.enabled or not results:
+            return
+        e = html.escape
+        blocks = [f"🏥 <b>의국 저널클럽 신규 논문 {len(results)}건</b>\n(자세한 분석은 메일·Notion 참고)"]
+        for i, item in enumerate(results, 1):
+            p = item.get("paper", {})
+            meta = " · ".join(x for x in (p.get("journal"), p.get("date")) if x)
+            b = f"\n<b>{i}. {e(str(p.get('title', ''))[:250])}</b>"
+            if meta:
+                b += f"\n📚 {e(meta)}"
+            one = self._one_liner(item.get("analysis"))
+            if one:
+                b += f"\n{e(one)}"
+            if p.get("link"):
+                b += f"\n🔗 {e(p['link'])}"
+            blocks.append(b)
+        msg, sent = "", 0
+        for b in blocks:
+            if len(msg) + len(b) > self.LIMIT and msg:
+                sent += self._send(msg); msg = ""
+            msg += b + "\n"
+        if msg:
+            sent += self._send(msg)
+        if sent:
+            logger.info(f"📨 텔레그램 요약 발송 완료 ({len(results)}건)")
+
+    def send_error(self, mode_name, err):
+        self._send(f"⚠️ <b>저널클럽 봇 오류</b> [{html.escape(str(mode_name))}]\n{html.escape(str(err))[:500]}")

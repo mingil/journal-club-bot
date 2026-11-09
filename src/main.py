@@ -13,7 +13,7 @@ from fetcher_md import MDFetcher
 from zotero_manager import ZoteroManager
 from notion_manager import NotionManager
 from analyzer import PaperAnalyzer
-from notifier import EmailNotifier
+from notifier import EmailNotifier, TelegramNotifier
 
 # --- 🛑 1. 도커 안전 종료 (Graceful Shutdown) 설정 ---
 is_running = True
@@ -82,6 +82,7 @@ def run_research_task(mode_name, days_back):
         notion_mgr = NotionManager()
         analyzer = PaperAnalyzer(custom_persona=custom_persona)
         notifier = EmailNotifier()
+        tg = TelegramNotifier()  # 선택: TELEGRAM_BOT_TOKEN·TELEGRAM_CHAT_ID 있을 때만
 
         # [STEP 2] Zotero에서 이미 처리된 논문(DOI/PMID) 목록 가져오기 (Source of Truth)
         # 주간/월간 백업 스캔 시에는 Zotero 서버와 로컬 캐시를 정기 동기화하여 정합성 100% 유지
@@ -153,11 +154,16 @@ def run_research_task(mode_name, days_back):
             else:
                 logger.info("📧 처리 완료된 신규 논문 리포트를 이메일로 발송합니다...")
                 notifier.send_report(analysis_results)
+                tg.send_report(analysis_results)
 
         logger.info(f"✨ [{mode_name}] 전체 파이프라인 작업 완료! (성공: {success_count}/{len(new_papers)}건)")
 
     except Exception as e:
         logger.error(f"❌ [{mode_name}] 파이프라인 메인 치명적 오류: {e}", exc_info=True)
+        try:
+            TelegramNotifier().send_error(mode_name, e)
+        except Exception:
+            pass
 
 
 # --- 📅 3. 스케줄러 래퍼 함수 (안전망) ---

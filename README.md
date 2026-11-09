@@ -138,6 +138,8 @@ Copy `.env.example` to `.env` and configure the following variables:
 | `NOTION_DATABASE_ID` | **Yes** | 32-character Notion Database ID (*Make sure to connect your integration via the page's `...` → `Connections` menu!*) |
 | `NCBI_API_KEY` | Recommended | API key from [NCBI Account Settings](https://www.ncbi.nlm.nih.gov/account/settings/) (increases PubMed rate limit from 3 req/s to 10 req/s) |
 | `SCHEDULE_DAILY_TIME` | No | Daily scan time in `HH:MM` format (default: `07:00`) |
+| `TELEGRAM_BOT_TOKEN` | No | Optional. Telegram bot token from [@BotFather](https://t.me/BotFather). When set together with `TELEGRAM_CHAT_ID`, a short summary (title, journal, one-line verdict, PubMed link) of each new paper and fatal-error alerts are also sent to Telegram. |
+| `TELEGRAM_CHAT_ID` | No | Optional. Your chat ID with the bot (send the bot a message, then read it from `https://api.telegram.org/bot<TOKEN>/getUpdates`). |
 
 ---
 
