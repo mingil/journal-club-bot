@@ -1,6 +1,7 @@
 import os
 import re
 import html
+import jcr_lookup
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -123,7 +124,7 @@ class EmailNotifier:
             certainty_badge = f'<span style="background-color: {badge_bg}; color: {badge_color}; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; margin-left: 10px; display: inline-block;">🧑‍⚕️ {md_cert}</span>'
 
             safe_title = html.escape(str(p.get('title', '제목 없음')))
-            safe_journal = html.escape(str(p.get('journal', 'N/A')))
+            safe_journal = html.escape(str(p.get('journal', 'N/A')) + ((" · " + jcr_lookup.label(p)) if jcr_lookup.label(p) else ""))
             safe_date = html.escape(str(p.get('date', 'N/A')))
             safe_authors = html.escape(str(p.get('authors', 'N/A')))
             safe_link = html.escape(str(p.get('link', '#')))
@@ -246,7 +247,7 @@ class TelegramNotifier:
         blocks = [f"🏥 <b>의국 저널클럽 신규 논문 {len(results)}건</b>\n(자세한 분석은 메일·Notion 참고)"]
         for i, item in enumerate(results, 1):
             p = item.get("paper", {})
-            meta = " · ".join(x for x in (p.get("journal"), p.get("date")) if x)
+            meta = " · ".join(x for x in (p.get("journal"), jcr_lookup.label(p), p.get("date")) if x)
             b = f"\n<b>{i}. {e(str(p.get('title', ''))[:250])}</b>"
             if meta:
                 b += f"\n📚 {e(meta)}"

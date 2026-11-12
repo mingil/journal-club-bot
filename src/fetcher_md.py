@@ -5,6 +5,7 @@ import datetime
 import logging
 import http.client
 from urllib.error import HTTPError, URLError
+import jcr_lookup
 from Bio import Entrez
 
 logger = logging.getLogger("JCBot")
@@ -173,6 +174,7 @@ class MDFetcher:
 
             # --- 4. 출판일 및 저널 파싱 ---
             journal = str(article_data.get('Journal', {}).get('Title', 'Unknown Journal'))
+            issn = str(article_data.get('Journal', {}).get('ISSN', '') or '').strip()
             pub_date = article_data.get('Journal', {}).get('JournalIssue', {}).get('PubDate', {})
 
             try:
@@ -190,6 +192,7 @@ class MDFetcher:
             return {
                 'id': pmid, 'doi': doi, 'title': title, 'abstract': abstract_text,
                 'journal': journal, 'date': date_str, 'authors': authors_str,
+                'issn': issn, 'jcr': jcr_lookup.lookup(issn, journal),
                 'raw_authors': raw_authors,
                 'md_certainty': 'High (PM&R MD Only)',
                 'link': f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/"

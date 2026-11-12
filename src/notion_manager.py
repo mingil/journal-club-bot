@@ -3,6 +3,7 @@ import re
 import time
 import logging
 from notion_client import Client
+import jcr_lookup
 
 logger = logging.getLogger("JCBot")
 
@@ -55,6 +56,7 @@ class NotionManager:
                     "rich_text": [
                         {"type": "text", "text": {"content": "📚 논문 메타데이터\n"}, "annotations": {"bold": True}},
                         {"type": "text", "text": {"content": f"• 저널: {paper.get('journal', 'N/A')} (발행일: {paper.get('date', 'N/A')})\n"}},
+                        *([{"type": "text", "text": {"content": f"• JCR: {jcr_lookup.label(paper)}\n"}}] if jcr_lookup.label(paper) else []),
                         {"type": "text", "text": {"content": f"• 저자: {paper.get('authors', 'N/A')}\n"}},
                         {"type": "text", "text": {"content": f"• PMID: {paper.get('id', 'N/A')} | DOI: {paper.get('doi', 'N/A')}"}}
                     ],
